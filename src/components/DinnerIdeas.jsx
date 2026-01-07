@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-export default function DinnerIdeas() {
+export default function DinnerIdeas({ userName }) {
   const [dinnerIdeas, setDinnerIdeas] = useState([]);
   const [newDinnerIdea, setNewDinnerIdea] = useState('');
   const [newDinnerUrl, setNewDinnerUrl] = useState('');
@@ -31,12 +31,13 @@ export default function DinnerIdeas() {
   };
 
   const addDinnerIdea = async () => {
-    if (!newDinnerIdea.trim()) return;
+    if (!newDinnerIdea.trim() || !userName) return;
     
     await supabase.from('dinner_ideas').insert([
       { 
         name: newDinnerIdea,
-        url: newDinnerUrl.trim() || null
+        url: newDinnerUrl.trim() || null,
+        added_by: userName
       }
     ]);
     setNewDinnerIdea('');
@@ -119,6 +120,11 @@ export default function DinnerIdeas() {
                 {idea.url && (
                   <div className="text-xs text-gray-400 mt-1 truncate overflow-hidden">
                     {idea.url}
+                  </div>
+                )}
+                {idea.added_by && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Added by {idea.added_by === userName ? 'you' : idea.added_by}
                   </div>
                 )}
               </div>

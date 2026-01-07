@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-export default function GroceryList() {
+export default function GroceryList({ userName }) {
   const [groceryItems, setGroceryItems] = useState([]);
   const [newItem, setNewItem] = useState('');
   const [loading, setLoading] = useState(true);
@@ -30,10 +30,10 @@ export default function GroceryList() {
   };
 
   const addGroceryItem = async () => {
-    if (!newItem.trim()) return;
+    if (!newItem.trim() || !userName) return;
     
     await supabase.from('grocery_items').insert([
-      { name: newItem, checked: false }
+      { name: newItem, checked: false, added_by: userName }
     ]);
     setNewItem('');
   };
@@ -69,6 +69,23 @@ export default function GroceryList() {
 
   const completedCount = groceryItems.filter(item => item.checked).length;
 
+  // Group items by person
+  const groupedItems = groceryItems.reduce((acc, item) => {
+    const person = item.added_by || 'Unknown';
+    if (!acc[person]) {
+      acc[person] = [];
+    }
+    acc[person].push(item);
+    return acc;
+  }, {});
+
+  // Sort so current user's items come first
+  const sortedPeople = Object.keys(groupedItems).sort((a, b) => {
+    if (a === userName) return -1;
+    if (b === userName) return 1;
+    return a.localeCompare(b);
+  });
+
   return (
     <div>
       <div className="mb-6">
@@ -98,34 +115,43 @@ export default function GroceryList() {
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-6">
         {groceryItems.length === 0 ? (
           <p className="text-gray-400 text-center py-8">No items yet. Add your first grocery item!</p>
         ) : (
-          groceryItems.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              <button
-                onClick={() => toggleGroceryItem(item.id, item.checked)}
-                className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center ${
-                  item.checked
-                    ? 'bg-green-500 border-green-500'
-                    : 'border-gray-500'
-                }`}
-              >
-                {item.checked && <Check size={16} className="text-white" />}
-              </button>
-              <span className={`flex-1 ${item.checked ? 'line-through text-gray-500' : 'text-white'}`}>
-                {item.name}
-              </span>
-              <button
-                onClick={() => deleteGroceryItem(item.id)}
-                className="text-red-500 hover:text-red-700 transition-colors"
-              >
-                <Trash2 size={18} />
-              </button>
+          sortedPeople.map((person) => (
+            <div key={person}>
+              <h3 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">
+                {person === userName ? 'Your Items' : `${person}'s Items`}
+              </h3>
+              <div className="space-y-2">
+                {groupedItems[person].map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    <button
+                      onClick={() => toggleGroceryItem(item.id, item.checked)}
+                      className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center ${
+                        item.checked
+                          ? 'bg-green-500 border-green-500'
+                          : 'border-gray-500'
+                      }`}
+                    >
+                      {item.checked && <Check size={16} className="text-white" />}
+                    </button>
+                    <span className={`flex-1 ${item.checked ? 'line-through text-gray-500' : 'text-white'}`}>
+                      {item.name}
+                    </span>
+                    <button
+                      onClick={() => deleteGroceryItem(item.id)}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           ))
         )}

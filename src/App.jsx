@@ -11,7 +11,6 @@ export default function HouseholdPlanner() {
   const [showNameModal, setShowNameModal] = useState(false);
 
   useEffect(() => {
-    // Check if user name is stored in localStorage
     const storedName = localStorage.getItem('householdPlannerUserName');
     if (storedName) {
       setUserName(storedName);
@@ -71,8 +70,8 @@ export default function HouseholdPlanner() {
           </div>
 
           <div className="p-6">
-            {activeTab === 'grocery' && <GroceryList />}
-            {activeTab === 'dinner' && <DinnerIdeas />}
+            {activeTab === 'grocery' && <GroceryList userName={userName} />}
+            {activeTab === 'dinner' && <DinnerIdeas userName={userName} />}
             {activeTab === 'shared' && <SharedItems userName={userName} />}
           </div>
         </div>
