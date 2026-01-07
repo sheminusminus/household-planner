@@ -91,7 +91,7 @@ export default function GroceryList() {
         {completedCount > 0 && (
           <button
             onClick={clearCompletedItems}
-            className="text-sm bg-gray-700 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+            className="text-sm bg-transparent text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors border border-gray-600"
           >
             Clear {completedCount} completed {completedCount === 1 ? 'item' : 'items'}
           </button>
