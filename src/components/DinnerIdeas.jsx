@@ -30,7 +30,7 @@ export default function DinnerIdeas({ userName }) {
       fetchComments(selectedIdea.id);
       
       const subscription = supabase
-        .channel('comments_changes')
+        .channel(`comments_${selectedIdea.id}`)
         .on('postgres_changes', { 
           event: '*', 
           schema: 'public', 
@@ -40,7 +40,7 @@ export default function DinnerIdeas({ userName }) {
         .subscribe();
 
       return () => {
-        subscription.unsubscribe();
+        supabase.removeChannel(subscription);
       };
     }
   }, [selectedIdea]);
@@ -125,6 +125,10 @@ export default function DinnerIdeas({ userName }) {
 
   const deleteComment = async (commentId) => {
     await supabase.from('dinner_idea_comments').delete().eq('id', commentId);
+    // Manually refresh comments after delete
+    if (selectedIdea) {
+      fetchComments(selectedIdea.id);
+    }
   };
 
   if (loading) {
