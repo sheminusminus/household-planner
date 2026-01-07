@@ -43,7 +43,7 @@ export default function HouseholdPlanner() {
               }`}
             >
               <ShoppingCart className="inline-block mr-2" size={20} />
-              Grocery List
+              Store List
             </button>
             <button
               onClick={() => setActiveTab('dinner')}
