@@ -1,7 +1,7 @@
 {
-  "name": "Aunt Kate's House",
-  "short_name": "Aunt Kate's",
-  "description": "Grocery list, dinner ideas, and shared items tracker",
+  "name": "Household Logistics",
+  "short_name": "Logistics",
+  "description": "Store list, dinner ideas, and shared items tracker",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1f2937",
