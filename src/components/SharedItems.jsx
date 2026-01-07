@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-const HOUSEHOLDS = ['Your Family', 'Sister\'s Family'];
-
-export default function SharedItems() {
+export default function SharedItems({ userName }) {
   const [sharedItems, setSharedItems] = useState([]);
   const [newSharedItem, setNewSharedItem] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,12 +30,12 @@ export default function SharedItems() {
   };
 
   const addSharedItem = async () => {
-    if (!newSharedItem.trim()) return;
+    if (!newSharedItem.trim() || !userName) return;
     
     await supabase.from('shared_items').insert([
       { 
         name: newSharedItem, 
-        last_bought_by: HOUSEHOLDS[0],
+        last_bought_by: userName,
         last_bought_date: new Date().toISOString()
       }
     ]);
@@ -50,12 +48,13 @@ export default function SharedItems() {
     }
   };
 
-  const updateSharedItemBuyer = async (id, currentBuyer) => {
-    const nextBuyer = currentBuyer === HOUSEHOLDS[0] ? HOUSEHOLDS[1] : HOUSEHOLDS[0];
+  const updateSharedItemBuyer = async (id) => {
+    if (!userName) return;
+    
     await supabase
       .from('shared_items')
       .update({ 
-        last_bought_by: nextBuyer,
+        last_bought_by: userName,
         last_bought_date: new Date().toISOString()
       })
       .eq('id', id);
@@ -77,7 +76,7 @@ export default function SharedItems() {
             type="text"
             value={newSharedItem}
             onChange={(e) => setNewSharedItem(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyUp={handleKeyPress}
             placeholder="Add shared item (toilet paper, coffee, etc)..."
             className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -111,21 +110,21 @@ export default function SharedItems() {
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-300">
                   <span>Last bought by: </span>
-                  <span className={`font-medium ${
-                    item.last_bought_by === HOUSEHOLDS[0] ? 'text-purple-400' : 'text-green-400'
-                  }`}>
+                  <span className="font-medium text-blue-400">
                     {item.last_bought_by}
                   </span>
                   <span className="ml-2 text-gray-500">
                     ({new Date(item.last_bought_date).toLocaleDateString()})
                   </span>
                 </div>
-                <button
-                  onClick={() => updateSharedItemBuyer(item.id, item.last_bought_by)}
-                  className="text-sm bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600 transition-colors"
-                >
-                  Mark as Bought
-                </button>
+                {item.last_bought_by !== userName && (
+                  <button
+                    onClick={() => updateSharedItemBuyer(item.id)}
+                    className="text-sm bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600 transition-colors"
+                  >
+                    Mark as Bought
+                  </button>
+                )}
               </div>
             </div>
           ))

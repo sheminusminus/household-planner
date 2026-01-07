@@ -1,11 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Calendar, Package } from 'lucide-react';
 import GroceryList from './components/GroceryList';
 import DinnerIdeas from './components/DinnerIdeas';
 import SharedItems from './components/SharedItems';
+import NameModal from './components/NameModal';
 
 export default function HouseholdPlanner() {
   const [activeTab, setActiveTab] = useState('grocery');
+  const [userName, setUserName] = useState('');
+  const [showNameModal, setShowNameModal] = useState(false);
+
+  useEffect(() => {
+    // Check if user name is stored in localStorage
+    const storedName = localStorage.getItem('householdPlannerUserName');
+    if (storedName) {
+      setUserName(storedName);
+    } else {
+      setShowNameModal(true);
+    }
+  }, []);
+
+  const handleSaveName = (name) => {
+    localStorage.setItem('householdPlannerUserName', name);
+    setUserName(name);
+    setShowNameModal(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
@@ -54,10 +73,12 @@ export default function HouseholdPlanner() {
           <div className="p-6">
             {activeTab === 'grocery' && <GroceryList />}
             {activeTab === 'dinner' && <DinnerIdeas />}
-            {activeTab === 'shared' && <SharedItems />}
+            {activeTab === 'shared' && <SharedItems userName={userName} />}
           </div>
         </div>
       </div>
+
+      {showNameModal && <NameModal onSave={handleSaveName} />}
     </div>
   );
 }

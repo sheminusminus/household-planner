@@ -70,7 +70,7 @@ export default function DinnerIdeas() {
           type="text"
           value={newDinnerIdea}
           onChange={(e) => setNewDinnerIdea(e.target.value)}
-          onKeyPress={handleNameKeyPress}
+          onKeyUp={handleNameKeyPress}
           placeholder="Dinner idea (e.g., Spaghetti Bolognese)..."
           className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
@@ -79,7 +79,7 @@ export default function DinnerIdeas() {
             type="url"
             value={newDinnerUrl}
             onChange={(e) => setNewDinnerUrl(e.target.value)}
-            onKeyPress={handleUrlKeyPress}
+            onKeyUp={handleUrlKeyPress}
             placeholder="Recipe URL (optional)..."
             className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
