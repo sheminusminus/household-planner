@@ -101,7 +101,7 @@ export default function DinnerIdeas() {
               key={idea.id}
               className="flex items-center justify-between p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-white font-medium">{idea.name}</span>
                   {idea.url && (
@@ -109,7 +109,7 @@ export default function DinnerIdeas() {
                       href={idea.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                      className="text-blue-400 hover:text-blue-300 transition-colors flex-shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <ExternalLink size={16} />
@@ -117,7 +117,7 @@ export default function DinnerIdeas() {
                   )}
                 </div>
                 {idea.url && (
-                  <div className="text-xs text-gray-400 mt-1 truncate">
+                  <div className="text-xs text-gray-400 mt-1 truncate overflow-hidden">
                     {idea.url}
                   </div>
                 )}
