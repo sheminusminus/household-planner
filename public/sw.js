@@ -1,4 +1,6 @@
-const CACHE_NAME = 'household-planner-v2'; // Increment this version number
+// Use timestamp as cache version - automatically unique per deploy
+const CACHE_NAME = `household-planner-${Date.now()}`;
+
 const urlsToCache = [
   '/',
   '/index.html',
