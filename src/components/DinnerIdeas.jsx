@@ -1,10 +1,12 @@
+// ===== src/components/DinnerIdeas.jsx =====
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function DinnerIdeas() {
   const [dinnerIdeas, setDinnerIdeas] = useState([]);
   const [newDinnerIdea, setNewDinnerIdea] = useState('');
+  const [newDinnerUrl, setNewDinnerUrl] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,12 +35,22 @@ export default function DinnerIdeas() {
     if (!newDinnerIdea.trim()) return;
     
     await supabase.from('dinner_ideas').insert([
-      { name: newDinnerIdea }
+      { 
+        name: newDinnerIdea,
+        url: newDinnerUrl.trim() || null
+      }
     ]);
     setNewDinnerIdea('');
+    setNewDinnerUrl('');
   };
 
-  const handleKeyPress = (e) => {
+  const handleNameKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      addDinnerIdea();
+    }
+  };
+
+  const handleUrlKeyPress = (e) => {
     if (e.key === 'Enter') {
       addDinnerIdea();
     }
@@ -54,14 +66,22 @@ export default function DinnerIdeas() {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-6 space-y-3">
+        <input
+          type="text"
+          value={newDinnerIdea}
+          onChange={(e) => setNewDinnerIdea(e.target.value)}
+          onKeyPress={handleNameKeyPress}
+          placeholder="Dinner idea (e.g., Spaghetti Bolognese)..."
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
         <div className="flex gap-2">
           <input
-            type="text"
-            value={newDinnerIdea}
-            onChange={(e) => setNewDinnerIdea(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Add dinner idea (e.g., Spaghetti Bolognese)..."
+            type="url"
+            value={newDinnerUrl}
+            onChange={(e) => setNewDinnerUrl(e.target.value)}
+            onKeyPress={handleUrlKeyPress}
+            placeholder="Recipe URL (optional)..."
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
@@ -82,10 +102,30 @@ export default function DinnerIdeas() {
               key={idea.id}
               className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <span className="text-gray-800 font-medium">{idea.name}</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-800 font-medium">{idea.name}</span>
+                  {idea.url && (
+                    <a
+                      href={idea.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-700 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink size={16} />
+                    </a>
+                  )}
+                </div>
+                {idea.url && (
+                  <div className="text-xs text-gray-500 mt-1 truncate">
+                    {idea.url}
+                  </div>
+                )}
+              </div>
               <button
                 onClick={() => deleteDinnerIdea(idea.id)}
-                className="text-red-500 hover:text-red-700 transition-colors"
+                className="text-red-500 hover:text-red-700 transition-colors ml-3"
               >
                 <Trash2 size={18} />
               </button>
