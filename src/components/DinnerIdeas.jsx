@@ -330,7 +330,7 @@ export default function DinnerIdeas({ userName }) {
 
             {/* Add Comment */}
             <div className="p-6 border-t border-gray-700">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
@@ -341,7 +341,7 @@ export default function DinnerIdeas({ userName }) {
                 />
                 <button
                   onClick={addComment}
-                  className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors self-end"
+                  className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors sm:self-end w-full sm:w-auto"
                 >
                   Send
                 </button>
