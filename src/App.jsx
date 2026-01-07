@@ -19,10 +19,37 @@ export default function HouseholdPlanner() {
     }
   }, []);
 
+  // Handle URL hash for tab routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Remove the '#'
+      if (['grocery', 'dinner', 'shared'].includes(hash)) {
+        setActiveTab(hash);
+      } else if (!hash) {
+        // Default to grocery if no hash
+        window.location.hash = 'grocery';
+      }
+    };
+
+    // Set initial tab from URL or default to grocery
+    handleHashChange();
+
+    // Listen for hash changes (back/forward buttons)
+    window.addEventListener('hashchange', handleHashChange);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
   const handleSaveName = (name) => {
     localStorage.setItem('householdPlannerUserName', name);
     setUserName(name);
     setShowNameModal(false);
+  };
+
+  const changeTab = (tab) => {
+    window.location.hash = tab;
   };
 
   return (
@@ -35,7 +62,7 @@ export default function HouseholdPlanner() {
         <div className="bg-gray-800 rounded-lg shadow-2xl mb-6 border border-gray-700">
           <div className="flex border-b border-gray-700">
             <button
-              onClick={() => setActiveTab('grocery')}
+              onClick={() => changeTab('grocery')}
               className={`flex-1 py-4 px-6 text-center font-semibold transition-colors ${
                 activeTab === 'grocery'
                   ? 'bg-blue-500 text-white'
@@ -46,7 +73,7 @@ export default function HouseholdPlanner() {
               Store List
             </button>
             <button
-              onClick={() => setActiveTab('dinner')}
+              onClick={() => changeTab('dinner')}
               className={`flex-1 py-4 px-6 text-center font-semibold transition-colors ${
                 activeTab === 'dinner'
                   ? 'bg-blue-500 text-white'
@@ -57,7 +84,7 @@ export default function HouseholdPlanner() {
               Dinner Ideas
             </button>
             <button
-              onClick={() => setActiveTab('shared')}
+              onClick={() => changeTab('shared')}
               className={`flex-1 py-4 px-6 text-center font-semibold transition-colors ${
                 activeTab === 'shared'
                   ? 'bg-blue-500 text-white'
