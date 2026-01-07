@@ -55,14 +55,24 @@ export default function GroceryList() {
     await supabase.from('grocery_items').delete().eq('id', id);
   };
 
+  const clearCompletedItems = async () => {
+    const completedItems = groceryItems.filter(item => item.checked);
+    if (completedItems.length === 0) return;
+    
+    const completedIds = completedItems.map(item => item.id);
+    await supabase.from('grocery_items').delete().in('id', completedIds);
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-gray-400">Loading...</div>;
   }
 
+  const completedCount = groceryItems.filter(item => item.checked).length;
+
   return (
     <div>
       <div className="mb-6">
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-3">
           <input
             type="text"
             value={newItem}
@@ -78,6 +88,14 @@ export default function GroceryList() {
             <Plus size={20} /> Add
           </button>
         </div>
+        {completedCount > 0 && (
+          <button
+            onClick={clearCompletedItems}
+            className="text-sm bg-gray-700 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+          >
+            Clear {completedCount} completed {completedCount === 1 ? 'item' : 'items'}
+          </button>
+        )}
       </div>
 
       <div className="space-y-2">
