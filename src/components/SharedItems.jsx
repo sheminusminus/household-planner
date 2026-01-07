@@ -72,7 +72,7 @@ export default function SharedItems() {
   return (
     <div>
       <div className="mb-6">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={newSharedItem}
@@ -83,7 +83,7 @@ export default function SharedItems() {
           />
           <button
             onClick={addSharedItem}
-            className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+            className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 sm:w-auto w-full"
           >
             <Plus size={20} /> Add
           </button>
