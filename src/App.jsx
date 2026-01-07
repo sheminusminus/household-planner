@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Plus, Trash2, Check, ShoppingCart, Calendar, Package } from 'lucide-react';
 
-// TODO: Replace these with your Supabase credentials
 const supabaseUrl = 'https://wisrbqibbbauqxxicqct.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indpc3JicWliYmJhdXF4eGljcWN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NzY5NTUsImV4cCI6MjA4MzI1Mjk1NX0.FzoRZ9PCvcyik4S-w6zU2oqg2FI38sT2cYW5KrtBi7Q';
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -12,15 +11,16 @@ const HOUSEHOLDS = ['Your Family', 'Sister\'s Family'];
 export default function HouseholdPlanner() {
   const [activeTab, setActiveTab] = useState('grocery');
   const [groceryItems, setGroceryItems] = useState([]);
-  const [dinnerSchedule, setDinnerSchedule] = useState([]);
+  const [dinnerIdeas, setDinnerIdeas] = useState([]);
   const [sharedItems, setSharedItems] = useState([]);
   const [newItem, setNewItem] = useState('');
+  const [newDinnerIdea, setNewDinnerIdea] = useState('');
   const [newSharedItem, setNewSharedItem] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchGroceryItems();
-    fetchDinnerSchedule();
+    fetchDinnerIdeas();
     fetchSharedItems();
     
     const grocerySubscription = supabase
@@ -30,7 +30,7 @@ export default function HouseholdPlanner() {
 
     const dinnerSubscription = supabase
       .channel('dinner_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dinner_schedule' }, fetchDinnerSchedule)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dinner_ideas' }, fetchDinnerIdeas)
       .subscribe();
 
     const sharedSubscription = supabase
@@ -54,12 +54,12 @@ export default function HouseholdPlanner() {
     setLoading(false);
   };
 
-  const fetchDinnerSchedule = async () => {
+  const fetchDinnerIdeas = async () => {
     const { data, error } = await supabase
-      .from('dinner_schedule')
+      .from('dinner_ideas')
       .select('*')
-      .order('date', { ascending: true });
-    if (!error) setDinnerSchedule(data || []);
+      .order('created_at', { ascending: false });
+    if (!error) setDinnerIdeas(data || []);
   };
 
   const fetchSharedItems = async () => {
@@ -96,33 +96,23 @@ export default function HouseholdPlanner() {
     await supabase.from('grocery_items').delete().eq('id', id);
   };
 
-  const generateDinnerSchedule = async () => {
-    const today = new Date();
-    const schedule = [];
+  const addDinnerIdea = async () => {
+    if (!newDinnerIdea.trim()) return;
     
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      
-      const cycleDay = i % 6;
-      const household = cycleDay < 3 ? HOUSEHOLDS[0] : HOUSEHOLDS[1];
-      
-      schedule.push({
-        date: date.toISOString().split('T')[0],
-        household: household,
-        meal: ''
-      });
-    }
-    
-    await supabase.from('dinner_schedule').delete().neq('id', 0);
-    await supabase.from('dinner_schedule').insert(schedule);
+    await supabase.from('dinner_ideas').insert([
+      { name: newDinnerIdea }
+    ]);
+    setNewDinnerIdea('');
   };
 
-  const updateDinnerMeal = async (id, meal) => {
-    await supabase
-      .from('dinner_schedule')
-      .update({ meal })
-      .eq('id', id);
+  const handleDinnerKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      addDinnerIdea();
+    }
+  };
+
+  const deleteDinnerIdea = async (id) => {
+    await supabase.from('dinner_ideas').delete().eq('id', id);
   };
 
   const addSharedItem = async () => {
@@ -196,7 +186,7 @@ export default function HouseholdPlanner() {
               }`}
             >
               <Calendar className="inline-block mr-2" size={20} />
-              Dinner Schedule
+              Dinner Ideas
             </button>
             <button
               onClick={() => setActiveTab('shared')}
@@ -270,65 +260,45 @@ export default function HouseholdPlanner() {
 
             {activeTab === 'dinner' && (
               <div>
-                {dinnerSchedule.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No schedule yet. Generate a 30-day schedule?</p>
+                <div className="mb-6">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newDinnerIdea}
+                      onChange={(e) => setNewDinnerIdea(e.target.value)}
+                      onKeyPress={handleDinnerKeyPress}
+                      placeholder="Add dinner idea (e.g., Spaghetti Bolognese)..."
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                     <button
-                      onClick={generateDinnerSchedule}
-                      className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                      onClick={addDinnerIdea}
+                      className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
                     >
-                      Generate Schedule
+                      <Plus size={20} /> Add
                     </button>
                   </div>
-                ) : (
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-700">Next 30 Days</h3>
-                      <button
-                        onClick={generateDinnerSchedule}
-                        className="text-sm bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                </div>
+
+                <div className="space-y-2">
+                  {dinnerIdeas.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">No dinner ideas yet. Add some meals you like to make!</p>
+                  ) : (
+                    dinnerIdeas.map((idea) => (
+                      <div
+                        key={idea.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                       >
-                        Regenerate
-                      </button>
-                    </div>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {dinnerSchedule.map((day) => {
-                        const date = new Date(day.date);
-                        const isToday = date.toDateString() === new Date().toDateString();
-                        
-                        return (
-                          <div
-                            key={day.id}
-                            className={`p-4 rounded-lg ${
-                              isToday ? 'bg-blue-100 border-2 border-blue-500' : 'bg-gray-50'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <span className="font-semibold text-gray-800">
-                                  {date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                                </span>
-                                {isToday && <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">Today</span>}
-                              </div>
-                              <span className={`text-sm font-medium px-3 py-1 rounded ${
-                                day.household === HOUSEHOLDS[0] ? 'bg-purple-200 text-purple-800' : 'bg-green-200 text-green-800'
-                              }`}>
-                                {day.household}
-                              </span>
-                            </div>
-                            <input
-                              type="text"
-                              value={day.meal || ''}
-                              onChange={(e) => updateDinnerMeal(day.id, e.target.value)}
-                              placeholder="What's for dinner?"
-                              className="w-full px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                        <span className="text-gray-800 font-medium">{idea.name}</span>
+                        <button
+                          onClick={() => deleteDinnerIdea(idea.id)}
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
 
