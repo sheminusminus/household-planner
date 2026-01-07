@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function DinnerIdeas({ userName }) {
@@ -37,7 +37,8 @@ export default function DinnerIdeas({ userName }) {
       { 
         name: newDinnerIdea,
         url: newDinnerUrl.trim() || null,
-        added_by: userName
+        added_by: userName,
+        favorited: false
       }
     ]);
     setNewDinnerIdea('');
@@ -56,6 +57,13 @@ export default function DinnerIdeas({ userName }) {
     }
   };
 
+  const toggleFavorite = async (id, currentFavorited) => {
+    await supabase
+      .from('dinner_ideas')
+      .update({ favorited: !currentFavorited })
+      .eq('id', id);
+  };
+
   const deleteDinnerIdea = async (id) => {
     await supabase.from('dinner_ideas').delete().eq('id', id);
   };
@@ -63,6 +71,59 @@ export default function DinnerIdeas({ userName }) {
   if (loading) {
     return <div className="text-center py-8 text-gray-400">Loading...</div>;
   }
+
+  const regularIdeas = dinnerIdeas.filter(idea => !idea.favorited);
+  const favoritedIdeas = dinnerIdeas.filter(idea => idea.favorited);
+
+  const renderIdea = (idea) => (
+    <div
+      key={idea.id}
+      className="flex items-center justify-between p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-white font-medium">{idea.name}</span>
+          {idea.url && (
+            <a
+              href={idea.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 transition-colors flex-shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink size={16} />
+            </a>
+          )}
+        </div>
+        {idea.url && (
+          <div className="text-xs text-gray-400 mt-1 truncate overflow-hidden">
+            {idea.url}
+          </div>
+        )}
+        {idea.added_by && (
+          <div className="text-xs text-gray-500 mt-1">
+            Added by {idea.added_by === userName ? 'you' : idea.added_by}
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-2 ml-3">
+        <button
+          onClick={() => toggleFavorite(idea.id, idea.favorited)}
+          className={`transition-colors ${
+            idea.favorited ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-red-500'
+          }`}
+        >
+          <Heart size={18} fill={idea.favorited ? 'currentColor' : 'none'} />
+        </button>
+        <button
+          onClick={() => deleteDinnerIdea(idea.id)}
+          className="text-red-500 hover:text-red-700 transition-colors"
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div>
@@ -93,51 +154,36 @@ export default function DinnerIdeas({ userName }) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        {dinnerIdeas.length === 0 ? (
-          <p className="text-gray-400 text-center py-8">No dinner ideas yet. Add some meals you like to make!</p>
-        ) : (
-          dinnerIdeas.map((idea) => (
-            <div
-              key={idea.id}
-              className="flex items-center justify-between p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-medium">{idea.name}</span>
-                  {idea.url && (
-                    <a
-                      href={idea.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 transition-colors flex-shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ExternalLink size={16} />
-                    </a>
-                  )}
-                </div>
-                {idea.url && (
-                  <div className="text-xs text-gray-400 mt-1 truncate overflow-hidden">
-                    {idea.url}
-                  </div>
-                )}
-                {idea.added_by && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Added by {idea.added_by === userName ? 'you' : idea.added_by}
-                  </div>
-                )}
+      {dinnerIdeas.length === 0 ? (
+        <p className="text-gray-400 text-center py-8">No dinner ideas yet. Add some meals you like to make!</p>
+      ) : (
+        <>
+          {/* Regular Ideas */}
+          {regularIdeas.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">
+                All Ideas
+              </h3>
+              <div className="space-y-2">
+                {regularIdeas.map(renderIdea)}
               </div>
-              <button
-                onClick={() => deleteDinnerIdea(idea.id)}
-                className="text-red-500 hover:text-red-700 transition-colors ml-3"
-              >
-                <Trash2 size={18} />
-              </button>
             </div>
-          ))
-        )}
-      </div>
+          )}
+
+          {/* Favorited Ideas */}
+          {favoritedIdeas.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide flex items-center gap-2">
+                <Heart size={16} fill="currentColor" className="text-red-500" />
+                Favorites
+              </h3>
+              <div className="space-y-2">
+                {favoritedIdeas.map(renderIdea)}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
