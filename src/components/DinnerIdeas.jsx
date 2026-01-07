@@ -1,4 +1,3 @@
-// ===== src/components/DinnerIdeas.jsx =====
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -61,7 +60,7 @@ export default function DinnerIdeas() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-500">Loading...</div>;
+    return <div className="text-center py-8 text-gray-400">Loading...</div>;
   }
 
   return (
@@ -73,7 +72,7 @@ export default function DinnerIdeas() {
           onChange={(e) => setNewDinnerIdea(e.target.value)}
           onKeyPress={handleNameKeyPress}
           placeholder="Dinner idea (e.g., Spaghetti Bolognese)..."
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         <div className="flex gap-2">
           <input
@@ -82,7 +81,7 @@ export default function DinnerIdeas() {
             onChange={(e) => setNewDinnerUrl(e.target.value)}
             onKeyPress={handleUrlKeyPress}
             placeholder="Recipe URL (optional)..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button
             onClick={addDinnerIdea}
@@ -95,22 +94,22 @@ export default function DinnerIdeas() {
 
       <div className="space-y-2">
         {dinnerIdeas.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No dinner ideas yet. Add some meals you like to make!</p>
+          <p className="text-gray-400 text-center py-8">No dinner ideas yet. Add some meals you like to make!</p>
         ) : (
           dinnerIdeas.map((idea) => (
             <div
               key={idea.id}
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center justify-between p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-800 font-medium">{idea.name}</span>
+                  <span className="text-white font-medium">{idea.name}</span>
                   {idea.url && (
                     <a
                       href={idea.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-500 hover:text-blue-700 transition-colors"
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <ExternalLink size={16} />
@@ -118,7 +117,7 @@ export default function DinnerIdeas() {
                   )}
                 </div>
                 {idea.url && (
-                  <div className="text-xs text-gray-500 mt-1 truncate">
+                  <div className="text-xs text-gray-400 mt-1 truncate">
                     {idea.url}
                   </div>
                 )}

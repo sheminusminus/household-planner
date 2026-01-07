@@ -66,7 +66,7 @@ export default function SharedItems() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-500">Loading...</div>;
+    return <div className="text-center py-8 text-gray-400">Loading...</div>;
   }
 
   return (
@@ -79,7 +79,7 @@ export default function SharedItems() {
             onChange={(e) => setNewSharedItem(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Add shared item (toilet paper, coffee, etc)..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button
             onClick={addSharedItem}
@@ -92,15 +92,15 @@ export default function SharedItems() {
 
       <div className="space-y-3">
         {sharedItems.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No shared items yet. Add items you take turns buying!</p>
+          <p className="text-gray-400 text-center py-8">No shared items yet. Add items you take turns buying!</p>
         ) : (
           sharedItems.map((item) => (
             <div
               key={item.id}
-              className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-gray-800">{item.name}</span>
+                <span className="font-semibold text-white">{item.name}</span>
                 <button
                   onClick={() => deleteSharedItem(item.id)}
                   className="text-red-500 hover:text-red-700 transition-colors"
@@ -109,14 +109,14 @@ export default function SharedItems() {
                 </button>
               </div>
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-300">
                   <span>Last bought by: </span>
                   <span className={`font-medium ${
-                    item.last_bought_by === HOUSEHOLDS[0] ? 'text-purple-600' : 'text-green-600'
+                    item.last_bought_by === HOUSEHOLDS[0] ? 'text-purple-400' : 'text-green-400'
                   }`}>
                     {item.last_bought_by}
                   </span>
-                  <span className="ml-2 text-gray-400">
+                  <span className="ml-2 text-gray-500">
                     ({new Date(item.last_bought_date).toLocaleDateString()})
                   </span>
                 </div>

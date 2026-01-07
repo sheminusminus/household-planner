@@ -56,7 +56,7 @@ export default function GroceryList() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-500">Loading...</div>;
+    return <div className="text-center py-8 text-gray-400">Loading...</div>;
   }
 
   return (
@@ -69,7 +69,7 @@ export default function GroceryList() {
             onChange={(e) => setNewItem(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Add grocery item..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button
             onClick={addGroceryItem}
@@ -82,24 +82,24 @@ export default function GroceryList() {
 
       <div className="space-y-2">
         {groceryItems.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No items yet. Add your first grocery item!</p>
+          <p className="text-gray-400 text-center py-8">No items yet. Add your first grocery item!</p>
         ) : (
           groceryItems.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               <button
                 onClick={() => toggleGroceryItem(item.id, item.checked)}
                 className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center ${
                   item.checked
                     ? 'bg-green-500 border-green-500'
-                    : 'border-gray-300'
+                    : 'border-gray-500'
                 }`}
               >
                 {item.checked && <Check size={16} className="text-white" />}
               </button>
-              <span className={`flex-1 ${item.checked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+              <span className={`flex-1 ${item.checked ? 'line-through text-gray-500' : 'text-white'}`}>
                 {item.name}
               </span>
               <button
