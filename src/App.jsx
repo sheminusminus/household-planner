@@ -29,7 +29,7 @@ export default function HouseholdPlanner() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-white mb-8 text-center">
-          🏠 Household Logistics
+          🏠 Household Logistics Preview
         </h1>
 
         <div className="bg-gray-800 rounded-lg shadow-2xl mb-6 border border-gray-700">
