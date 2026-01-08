@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Check } from 'lucide-react';
+import { Plus, Trash2, Check, GripVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function GroceryList({ userName }) {
   const [groceryItems, setGroceryItems] = useState([]);
   const [newItem, setNewItem] = useState('');
   const [loading, setLoading] = useState(true);
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
 
   useEffect(() => {
     fetchGroceryItems();
@@ -24,6 +26,7 @@ export default function GroceryList({ userName }) {
     const { data, error } = await supabase
       .from('grocery_items')
       .select('*')
+      .order('order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false });
     if (!error) setGroceryItems(data || []);
     setLoading(false);
@@ -32,8 +35,13 @@ export default function GroceryList({ userName }) {
   const addGroceryItem = async () => {
     if (!newItem.trim() || !userName) return;
     
+    // Get the max order value
+    const maxOrder = groceryItems.length > 0 
+      ? Math.max(...groceryItems.map(item => item.order || 0))
+      : 0;
+    
     await supabase.from('grocery_items').insert([
-      { name: newItem, checked: false, added_by: userName }
+      { name: newItem, checked: false, added_by: userName, order: maxOrder + 1 }
     ]);
     setNewItem('');
   };
@@ -61,6 +69,136 @@ export default function GroceryList({ userName }) {
     
     const completedIds = completedItems.map(item => item.id);
     await supabase.from('grocery_items').delete().in('id', completedIds);
+  };
+
+  const handleDragStart = (e, item) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, targetItem) => {
+    e.preventDefault();
+    
+    if (!draggedItem || draggedItem.id === targetItem.id) {
+      setDraggedItem(null);
+      return;
+    }
+
+    // Only allow reordering within the same person's items
+    if (draggedItem.added_by !== targetItem.added_by) {
+      setDraggedItem(null);
+      return;
+    }
+
+    const items = [...groceryItems];
+    const draggedIndex = items.findIndex(item => item.id === draggedItem.id);
+    const targetIndex = items.findIndex(item => item.id === targetItem.id);
+
+    // Remove dragged item and insert at target position
+    items.splice(draggedIndex, 1);
+    items.splice(targetIndex, 0, draggedItem);
+
+    // Update order values
+    const updates = items.map((item, index) => ({
+      id: item.id,
+      order: index
+    }));
+
+    // Update in database
+    for (const update of updates) {
+      await supabase
+        .from('grocery_items')
+        .update({ order: update.order })
+        .eq('id', update.id);
+    }
+
+    setDraggedItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+  };
+
+  const handleTouchStart = (e, item) => {
+    setDraggedItem(item);
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!draggedItem || touchStartY === null) return;
+    
+    const touchY = e.touches[0].clientY;
+    const element = document.elementFromPoint(e.touches[0].clientX, touchY);
+    
+    if (element) {
+      const itemElement = element.closest('[data-item-id]');
+      if (itemElement) {
+        const targetId = parseInt(itemElement.getAttribute('data-item-id'));
+        const targetItem = groceryItems.find(item => item.id === targetId);
+        
+        if (targetItem && targetItem.id !== draggedItem.id && targetItem.added_by === draggedItem.added_by) {
+          // Visual feedback - could add highlight here if desired
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = async (e) => {
+    if (!draggedItem || touchStartY === null) {
+      setDraggedItem(null);
+      setTouchStartY(null);
+      return;
+    }
+
+    const touchY = e.changedTouches[0].clientY;
+    const element = document.elementFromPoint(e.changedTouches[0].clientX, touchY);
+    
+    if (element) {
+      const itemElement = element.closest('[data-item-id]');
+      if (itemElement) {
+        const targetId = parseInt(itemElement.getAttribute('data-item-id'));
+        const targetItem = groceryItems.find(item => item.id === targetId);
+        
+        if (targetItem && targetItem.id !== draggedItem.id) {
+          // Only allow reordering within the same person's items
+          if (draggedItem.added_by !== targetItem.added_by) {
+            setDraggedItem(null);
+            setTouchStartY(null);
+            return;
+          }
+
+          const items = [...groceryItems];
+          const draggedIndex = items.findIndex(item => item.id === draggedItem.id);
+          const targetIndex = items.findIndex(item => item.id === targetItem.id);
+
+          // Remove dragged item and insert at target position
+          items.splice(draggedIndex, 1);
+          items.splice(targetIndex, 0, draggedItem);
+
+          // Update order values
+          const updates = items.map((item, index) => ({
+            id: item.id,
+            order: index
+          }));
+
+          // Update in database
+          for (const update of updates) {
+            await supabase
+              .from('grocery_items')
+              .update({ order: update.order })
+              .eq('id', update.id);
+          }
+        }
+      }
+    }
+
+    setDraggedItem(null);
+    setTouchStartY(null);
   };
 
   if (loading) {
@@ -117,7 +255,7 @@ export default function GroceryList({ userName }) {
 
       <div className="space-y-6">
         {groceryItems.length === 0 ? (
-          <p className="text-gray-400 text-center py-8">No items yet. Add your first grocery item!</p>
+          <p className="text-gray-400 text-center py-8">No items yet. Add your first store item!</p>
         ) : (
           sortedPeople.map((person) => (
             <div key={person}>
@@ -128,8 +266,20 @@ export default function GroceryList({ userName }) {
                 {groupedItems[person].map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                    data-item-id={item.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, item)}
+                    onDragEnd={handleDragEnd}
+                    onTouchStart={(e) => handleTouchStart(e, item)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    className={`flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors cursor-move ${
+                      draggedItem?.id === item.id ? 'opacity-50' : ''
+                    }`}
                   >
+                    <GripVertical size={16} className="text-gray-500 flex-shrink-0" />
                     <button
                       onClick={() => toggleGroceryItem(item.id, item.checked)}
                       className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center ${
