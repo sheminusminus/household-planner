@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ExternalLink, Heart, MessageCircle, X } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Heart, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import CommentsModal from './CommentsModal';
 
 export default function DinnerIdeas({ userName }) {
   const [dinnerIdeas, setDinnerIdeas] = useState([]);
@@ -8,9 +9,6 @@ export default function DinnerIdeas({ userName }) {
   const [newDinnerUrl, setNewDinnerUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
-  const [loadingComments, setLoadingComments] = useState(false);
 
   useEffect(() => {
     fetchDinnerIdeas();
@@ -25,26 +23,6 @@ export default function DinnerIdeas({ userName }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (selectedIdea) {
-      fetchComments(selectedIdea.id);
-      
-      const subscription = supabase
-        .channel(`comments_${selectedIdea.id}`)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'dinner_idea_comments',
-          filter: `dinner_idea_id=eq.${selectedIdea.id}`
-        }, () => fetchComments(selectedIdea.id))
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(subscription);
-      };
-    }
-  }, [selectedIdea]);
-
   const fetchDinnerIdeas = async () => {
     const { data, error } = await supabase
       .from('dinner_ideas')
@@ -52,17 +30,6 @@ export default function DinnerIdeas({ userName }) {
       .order('created_at', { ascending: false });
     if (!error) setDinnerIdeas(data || []);
     setLoading(false);
-  };
-
-  const fetchComments = async (dinnerIdeaId) => {
-    setLoadingComments(true);
-    const { data, error } = await supabase
-      .from('dinner_idea_comments')
-      .select('*')
-      .eq('dinner_idea_id', dinnerIdeaId)
-      .order('created_at', { ascending: true });
-    if (!error) setComments(data || []);
-    setLoadingComments(false);
   };
 
   const addDinnerIdea = async () => {
@@ -101,34 +68,6 @@ export default function DinnerIdeas({ userName }) {
 
   const deleteDinnerIdea = async (id) => {
     await supabase.from('dinner_ideas').delete().eq('id', id);
-  };
-
-  const addComment = async () => {
-    if (!newComment.trim() || !selectedIdea || !userName) return;
-    
-    await supabase.from('dinner_idea_comments').insert([
-      {
-        dinner_idea_id: selectedIdea.id,
-        comment_text: newComment,
-        added_by: userName
-      }
-    ]);
-    setNewComment('');
-  };
-
-  const handleCommentKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      addComment();
-    }
-  };
-
-  const deleteComment = async (commentId) => {
-    await supabase.from('dinner_idea_comments').delete().eq('id', commentId);
-    // Manually refresh comments after delete
-    if (selectedIdea) {
-      fetchComments(selectedIdea.id);
-    }
   };
 
   if (loading) {
@@ -268,87 +207,13 @@ export default function DinnerIdeas({ userName }) {
 
       {/* Comments Modal */}
       {selectedIdea && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] flex flex-col border border-gray-700">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-700 flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <h2 className="text-2xl font-bold text-white mb-2">{selectedIdea.name}</h2>
-                {selectedIdea.url && (
-                  <a
-                    href={selectedIdea.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                  >
-                    <ExternalLink size={14} />
-                    View Recipe
-                  </a>
-                )}
-              </div>
-              <button
-                onClick={() => setSelectedIdea(null)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            {/* Comments */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {loadingComments ? (
-                <div className="text-center py-8 text-gray-400">Loading comments...</div>
-              ) : comments.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">No comments yet. Be the first to add one!</div>
-              ) : (
-                <div className="space-y-4">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="bg-gray-700 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="text-sm text-gray-400">
-                          <span className="font-medium text-blue-400">
-                            {comment.added_by === userName ? 'You' : comment.added_by}
-                          </span>
-                          <span className="mx-2">•</span>
-                          <span>{new Date(comment.created_at).toLocaleDateString()}</span>
-                        </div>
-                        {comment.added_by === userName && (
-                          <button
-                            onClick={() => deleteComment(comment.id)}
-                            className="text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-white whitespace-pre-wrap">{comment.comment_text}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Add Comment */}
-            <div className="p-6 border-t border-gray-700">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyUp={handleCommentKeyPress}
-                  placeholder="Add a comment... (Press Enter to send, Shift+Enter for new line)"
-                  rows="2"
-                  className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-                <button
-                  onClick={addComment}
-                  className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors sm:self-end w-full sm:w-auto"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CommentsModal
+          item={selectedIdea}
+          onClose={() => setSelectedIdea(null)}
+          userName={userName}
+          tableName="dinner_idea_comments"
+          foreignKeyName="dinner_idea_id"
+        />
       )}
     </div>
   );
