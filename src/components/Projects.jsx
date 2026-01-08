@@ -58,9 +58,19 @@ export default function Projects({ userName }) {
     const currentIndex = statusOrder.indexOf(currentStatus);
     const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
     
+    const updates = { status: nextStatus };
+    
+    // Track who completed it
+    if (nextStatus === 'completed') {
+      updates.completed_by = userName;
+    } else if (currentStatus === 'completed') {
+      // Clear completed_by if cycling away from completed
+      updates.completed_by = null;
+    }
+    
     await supabase
       .from('projects')
-      .update({ status: nextStatus })
+      .update(updates)
       .eq('id', id);
   };
 
@@ -266,6 +276,9 @@ export default function Projects({ userName }) {
                             )}
                             <p className="text-xs text-gray-500 mt-2">
                               Added by {project.added_by === userName ? 'you' : project.added_by}
+                              {project.completed_by && (
+                                <span> • Completed by {project.completed_by === userName ? 'you' : project.completed_by}</span>
+                              )}
                             </p>
                           </div>
                         </div>
