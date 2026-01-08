@@ -8,7 +8,7 @@ export default function GroceryList({ userName }) {
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
-  const itemRefs = React.useRef({});
+  const gripRefs = React.useRef({});
 
   useEffect(() => {
     fetchGroceryItems();
@@ -25,17 +25,20 @@ export default function GroceryList({ userName }) {
 
   // Add touch event listeners with passive: false
   useEffect(() => {
-    const items = Object.values(itemRefs.current);
+    const grips = Object.values(gripRefs.current);
     
-    items.forEach(item => {
-      if (item) {
+    grips.forEach(grip => {
+      if (grip) {
         const touchStart = (e) => {
-          const itemId = parseInt(item.getAttribute('data-item-id'));
-          const itemData = groceryItems.find(i => i.id === itemId);
-          if (itemData) {
-            e.preventDefault();
-            setDraggedItem(itemData);
-            setTouchStartY(e.touches[0].clientY);
+          const itemElement = grip.closest('[data-item-id]');
+          if (itemElement) {
+            const itemId = parseInt(itemElement.getAttribute('data-item-id'));
+            const itemData = groceryItems.find(i => i.id === itemId);
+            if (itemData) {
+              e.preventDefault();
+              setDraggedItem(itemData);
+              setTouchStartY(e.touches[0].clientY);
+            }
           }
         };
 
@@ -59,16 +62,16 @@ export default function GroceryList({ userName }) {
           }
         };
 
-        item.addEventListener('touchstart', touchStart, { passive: false });
-        item.addEventListener('touchmove', touchMove, { passive: false });
+        grip.addEventListener('touchstart', touchStart, { passive: false });
+        grip.addEventListener('touchmove', touchMove, { passive: false });
       }
     });
 
     return () => {
-      items.forEach(item => {
-        if (item) {
-          item.removeEventListener('touchstart', () => {});
-          item.removeEventListener('touchmove', () => {});
+      grips.forEach(grip => {
+        if (grip) {
+          grip.removeEventListener('touchstart', () => {});
+          grip.removeEventListener('touchmove', () => {});
         }
       });
     };
@@ -124,7 +127,14 @@ export default function GroceryList({ userName }) {
   };
 
   const handleDragStart = (e, item) => {
+    console.log("drag start");
+    // Only allow drag from grip icon
+    if (!e.target.closest('.drag-grip')) {
+      e.preventDefault();
+      return;
+    }
     setDraggedItem(item);
+    console.log(item);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -302,7 +312,6 @@ export default function GroceryList({ userName }) {
                 {groupedItems[person].map((item) => (
                   <div
                     key={item.id}
-                    ref={el => itemRefs.current[item.id] = el}
                     data-item-id={item.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, item)}
@@ -310,12 +319,17 @@ export default function GroceryList({ userName }) {
                     onDrop={(e) => handleDrop(e, item)}
                     onDragEnd={handleDragEnd}
                     onTouchEnd={handleTouchEnd}
-                    style={{ touchAction: 'none' }}
-                    className={`flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors cursor-move ${
+                    className={`flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors ${
                       draggedItem?.id === item.id ? 'opacity-50' : ''
                     }`}
                   >
-                    <GripVertical size={16} className="text-gray-500 flex-shrink-0" />
+                    <div 
+                      ref={el => gripRefs.current[item.id] = el}
+                      className="drag-grip cursor-move touch-none"
+                      style={{ touchAction: 'none' }}
+                    >
+                      <GripVertical size={16} className="text-gray-500 flex-shrink-0" />
+                    </div>
                     <button
                       onClick={() => toggleGroceryItem(item.id, item.checked)}
                       className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center ${
