@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, CheckCircle, Circle, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import CommentsModal from './CommentsModal';
 
 export default function Projects({ userName }) {
   const [projects, setProjects] = useState([]);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState(null);
 
   useEffect(() => {
     fetchProjects();
@@ -142,12 +144,16 @@ export default function Projects({ userName }) {
                   {projectsByStatus.not_started.map((project) => (
                     <div
                       key={project.id}
-                      className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                      className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
+                      onClick={() => setSelectedProject(project)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-start gap-3 flex-1">
                           <button
-                            onClick={() => updateStatus(project.id, project.status)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateStatus(project.id, project.status);
+                            }}
                             className="mt-1"
                           >
                             {getStatusIcon(project.status)}
@@ -163,7 +169,10 @@ export default function Projects({ userName }) {
                           </div>
                         </div>
                         <button
-                          onClick={() => deleteProject(project.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteProject(project.id);
+                          }}
                           className="text-red-500 hover:text-red-700 transition-colors ml-3"
                         >
                           <Trash2 size={18} />
@@ -185,12 +194,16 @@ export default function Projects({ userName }) {
                   {projectsByStatus.in_progress.map((project) => (
                     <div
                       key={project.id}
-                      className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                      className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
+                      onClick={() => setSelectedProject(project)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-start gap-3 flex-1">
                           <button
-                            onClick={() => updateStatus(project.id, project.status)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateStatus(project.id, project.status);
+                            }}
                             className="mt-1"
                           >
                             {getStatusIcon(project.status)}
@@ -206,7 +219,10 @@ export default function Projects({ userName }) {
                           </div>
                         </div>
                         <button
-                          onClick={() => deleteProject(project.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteProject(project.id);
+                          }}
                           className="text-red-500 hover:text-red-700 transition-colors ml-3"
                         >
                           <Trash2 size={18} />
@@ -229,12 +245,16 @@ export default function Projects({ userName }) {
                   {projectsByStatus.completed.map((project) => (
                     <div
                       key={project.id}
-                      className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors opacity-75"
+                      className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors opacity-75 cursor-pointer"
+                      onClick={() => setSelectedProject(project)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-start gap-3 flex-1">
                           <button
-                            onClick={() => updateStatus(project.id, project.status)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateStatus(project.id, project.status);
+                            }}
                             className="mt-1"
                           >
                             {getStatusIcon(project.status)}
@@ -250,7 +270,10 @@ export default function Projects({ userName }) {
                           </div>
                         </div>
                         <button
-                          onClick={() => deleteProject(project.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteProject(project.id);
+                          }}
                           className="text-red-500 hover:text-red-700 transition-colors ml-3"
                         >
                           <Trash2 size={18} />
@@ -264,6 +287,17 @@ export default function Projects({ userName }) {
           </>
         )}
       </div>
+
+      {/* Comments Modal */}
+      {selectedProject && (
+        <CommentsModal
+          item={selectedProject}
+          onClose={() => setSelectedProject(null)}
+          userName={userName}
+          tableName="project_comments"
+          foreignKeyName="project_id"
+        />
+      )}
     </div>
   );
 }
