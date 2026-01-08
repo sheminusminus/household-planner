@@ -8,6 +8,7 @@ export default function GroceryList({ userName }) {
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
+  const itemRefs = React.useRef({});
 
   useEffect(() => {
     fetchGroceryItems();
@@ -21,6 +22,57 @@ export default function GroceryList({ userName }) {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Add touch event listeners with passive: false
+  useEffect(() => {
+    const items = Object.values(itemRefs.current);
+    
+    items.forEach(item => {
+      if (item) {
+        const touchStart = (e) => {
+          const itemId = parseInt(item.getAttribute('data-item-id'));
+          const itemData = groceryItems.find(i => i.id === itemId);
+          if (itemData) {
+            e.preventDefault();
+            setDraggedItem(itemData);
+            setTouchStartY(e.touches[0].clientY);
+          }
+        };
+
+        const touchMove = (e) => {
+          if (!draggedItem || touchStartY === null) return;
+          e.preventDefault();
+          
+          const touchY = e.touches[0].clientY;
+          const element = document.elementFromPoint(e.touches[0].clientX, touchY);
+          
+          if (element) {
+            const itemElement = element.closest('[data-item-id]');
+            if (itemElement) {
+              const targetId = parseInt(itemElement.getAttribute('data-item-id'));
+              const targetItem = groceryItems.find(i => i.id === targetId);
+              
+              if (targetItem && targetItem.id !== draggedItem.id && targetItem.added_by === draggedItem.added_by) {
+                // Visual feedback could be added here
+              }
+            }
+          }
+        };
+
+        item.addEventListener('touchstart', touchStart, { passive: false });
+        item.addEventListener('touchmove', touchMove, { passive: false });
+      }
+    });
+
+    return () => {
+      items.forEach(item => {
+        if (item) {
+          item.removeEventListener('touchstart', () => {});
+          item.removeEventListener('touchmove', () => {});
+        }
+      });
+    };
+  }, [groceryItems, draggedItem, touchStartY]);
 
   const fetchGroceryItems = async () => {
     const { data, error } = await supabase
@@ -125,27 +177,11 @@ export default function GroceryList({ userName }) {
   };
 
   const handleTouchStart = (e, item) => {
-    setDraggedItem(item);
-    setTouchStartY(e.touches[0].clientY);
+    // This is now handled by the useEffect with passive: false
   };
 
   const handleTouchMove = (e) => {
-    if (!draggedItem || touchStartY === null) return;
-    
-    const touchY = e.touches[0].clientY;
-    const element = document.elementFromPoint(e.touches[0].clientX, touchY);
-    
-    if (element) {
-      const itemElement = element.closest('[data-item-id]');
-      if (itemElement) {
-        const targetId = parseInt(itemElement.getAttribute('data-item-id'));
-        const targetItem = groceryItems.find(item => item.id === targetId);
-        
-        if (targetItem && targetItem.id !== draggedItem.id && targetItem.added_by === draggedItem.added_by) {
-          // Visual feedback - could add highlight here if desired
-        }
-      }
-    }
+    // This is now handled by the useEffect with passive: false
   };
 
   const handleTouchEnd = async (e) => {
@@ -266,15 +302,15 @@ export default function GroceryList({ userName }) {
                 {groupedItems[person].map((item) => (
                   <div
                     key={item.id}
+                    ref={el => itemRefs.current[item.id] = el}
                     data-item-id={item.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, item)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, item)}
                     onDragEnd={handleDragEnd}
-                    onTouchStart={(e) => handleTouchStart(e, item)}
-                    onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
+                    style={{ touchAction: 'none' }}
                     className={`flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors cursor-move ${
                       draggedItem?.id === item.id ? 'opacity-50' : ''
                     }`}
