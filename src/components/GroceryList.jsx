@@ -8,6 +8,7 @@ export default function GroceryList({ userName }) {
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
+  const [dropPosition, setDropPosition] = useState(null); // { itemId, position: 'before' | 'after' }
   const gripRefs = React.useRef({});
 
   useEffect(() => {
@@ -56,8 +57,15 @@ export default function GroceryList({ userName }) {
               const targetItem = groceryItems.find(i => i.id === targetId);
               
               if (targetItem && targetItem.id !== draggedItem.id && targetItem.added_by === draggedItem.added_by) {
-                // Visual feedback could be added here
+                const rect = itemElement.getBoundingClientRect();
+                const midpoint = rect.top + rect.height / 2;
+                const position = touchY < midpoint ? 'before' : 'after';
+                setDropPosition({ itemId: targetItem.id, position });
+              } else {
+                setDropPosition(null);
               }
+            } else {
+              setDropPosition(null);
             }
           }
         };
@@ -128,7 +136,7 @@ export default function GroceryList({ userName }) {
 
   const handleDragStart = (e, item) => {
     // Only allow drag from grip icon
-    if (!e.target.closest('[data-item-id]')) {
+    if (!e.target.closest('.drag-grip')) {
       e.preventDefault();
       return;
     }
@@ -139,6 +147,22 @@ export default function GroceryList({ userName }) {
   const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    
+    // Determine drop position based on mouse position
+    const itemElement = e.target.closest('[data-item-id]');
+    if (itemElement && draggedItem) {
+      const targetId = parseInt(itemElement.getAttribute('data-item-id'));
+      const targetItem = groceryItems.find(item => item.id === targetId);
+      
+      if (targetItem && targetItem.id !== draggedItem.id && targetItem.added_by === draggedItem.added_by) {
+        const rect = itemElement.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        const position = e.clientY < midpoint ? 'before' : 'after';
+        setDropPosition({ itemId: targetItem.id, position });
+      } else {
+        setDropPosition(null);
+      }
+    }
   };
 
   const handleDrop = async (e, targetItem) => {
@@ -146,12 +170,14 @@ export default function GroceryList({ userName }) {
     
     if (!draggedItem || draggedItem.id === targetItem.id) {
       setDraggedItem(null);
+      setDropPosition(null);
       return;
     }
 
     // Only allow reordering within the same person's items
     if (draggedItem.added_by !== targetItem.added_by) {
       setDraggedItem(null);
+      setDropPosition(null);
       return;
     }
 
@@ -159,9 +185,17 @@ export default function GroceryList({ userName }) {
     const draggedIndex = items.findIndex(item => item.id === draggedItem.id);
     const targetIndex = items.findIndex(item => item.id === targetItem.id);
 
-    // Remove dragged item and insert at target position
+    // Remove dragged item
     items.splice(draggedIndex, 1);
-    items.splice(targetIndex, 0, draggedItem);
+    
+    // Determine insertion point based on drop position
+    let insertIndex = items.findIndex(item => item.id === targetItem.id);
+    if (dropPosition?.position === 'after') {
+      insertIndex += 1;
+    }
+    
+    // Insert at target position
+    items.splice(insertIndex, 0, draggedItem);
 
     // Update order values
     const updates = items.map((item, index) => ({
@@ -178,10 +212,12 @@ export default function GroceryList({ userName }) {
     }
 
     setDraggedItem(null);
+    setDropPosition(null);
   };
 
   const handleDragEnd = () => {
     setDraggedItem(null);
+    setDropPosition(null);
   };
 
   const handleTouchStart = (e, item) => {
@@ -243,6 +279,7 @@ export default function GroceryList({ userName }) {
 
     setDraggedItem(null);
     setTouchStartY(null);
+    setDropPosition(null);
   };
 
   if (loading) {
@@ -308,45 +345,56 @@ export default function GroceryList({ userName }) {
               </h3>
               <div className="space-y-2">
                 {groupedItems[person].map((item) => (
-                  <div
-                    key={item.id}
-                    data-item-id={item.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, item)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, item)}
-                    onDragEnd={handleDragEnd}
-                    onTouchEnd={handleTouchEnd}
-                    className={`flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors ${
-                      draggedItem?.id === item.id ? 'opacity-50' : ''
-                    }`}
-                  >
-                    <div 
-                      ref={el => gripRefs.current[item.id] = el}
-                      className="drag-grip cursor-move"
-                      style={{ touchAction: 'none' }}
-                    >
-                      <GripVertical size={16} className="text-gray-500 flex-shrink-0 pointer-events-none" />
-                    </div>
-                    <button
-                      onClick={() => toggleGroceryItem(item.id, item.checked)}
-                      className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center ${
-                        item.checked
-                          ? 'bg-green-500 border-green-500'
-                          : 'border-gray-500'
+                  <div key={item.id}>
+                    {/* Drop indicator before item */}
+                    {dropPosition?.itemId === item.id && dropPosition?.position === 'before' && (
+                      <div className="h-1 bg-blue-500 rounded-full mb-2 transition-all" />
+                    )}
+                    
+                    <div
+                      data-item-id={item.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, item)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, item)}
+                      onDragEnd={handleDragEnd}
+                      onTouchEnd={handleTouchEnd}
+                      className={`flex items-center gap-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors ${
+                        draggedItem?.id === item.id ? 'opacity-50' : ''
                       }`}
                     >
-                      {item.checked && <Check size={16} className="text-white" />}
-                    </button>
-                    <span className={`flex-1 ${item.checked ? 'line-through text-gray-500' : 'text-white'}`}>
-                      {item.name}
-                    </span>
-                    <button
-                      onClick={() => deleteGroceryItem(item.id)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                      <div 
+                        ref={el => gripRefs.current[item.id] = el}
+                        className="drag-grip cursor-move"
+                        style={{ touchAction: 'none' }}
+                      >
+                        <GripVertical size={16} className="text-gray-500 flex-shrink-0 pointer-events-none" />
+                      </div>
+                      <button
+                        onClick={() => toggleGroceryItem(item.id, item.checked)}
+                        className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center ${
+                          item.checked
+                            ? 'bg-green-500 border-green-500'
+                            : 'border-gray-500'
+                        }`}
+                      >
+                        {item.checked && <Check size={16} className="text-white" />}
+                      </button>
+                      <span className={`flex-1 ${item.checked ? 'line-through text-gray-500' : 'text-white'}`}>
+                        {item.name}
+                      </span>
+                      <button
+                        onClick={() => deleteGroceryItem(item.id)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                    
+                    {/* Drop indicator after item */}
+                    {dropPosition?.itemId === item.id && dropPosition?.position === 'after' && (
+                      <div className="h-1 bg-blue-500 rounded-full mt-2 transition-all" />
+                    )}
                   </div>
                 ))}
               </div>
