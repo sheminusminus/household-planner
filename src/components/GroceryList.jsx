@@ -127,14 +127,12 @@ export default function GroceryList({ userName }) {
   };
 
   const handleDragStart = (e, item) => {
-    console.log("drag start");
     // Only allow drag from grip icon
-    if (!e.target.closest('.drag-grip')) {
+    if (!e.target.closest('[data-item-id]')) {
       e.preventDefault();
       return;
     }
     setDraggedItem(item);
-    console.log(item);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -325,10 +323,10 @@ export default function GroceryList({ userName }) {
                   >
                     <div 
                       ref={el => gripRefs.current[item.id] = el}
-                      className="drag-grip cursor-move touch-none"
+                      className="drag-grip cursor-move"
                       style={{ touchAction: 'none' }}
                     >
-                      <GripVertical size={16} className="text-gray-500 flex-shrink-0" />
+                      <GripVertical size={16} className="text-gray-500 flex-shrink-0 pointer-events-none" />
                     </div>
                     <button
                       onClick={() => toggleGroceryItem(item.id, item.checked)}
